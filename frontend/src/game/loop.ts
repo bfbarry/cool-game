@@ -35,8 +35,15 @@ export class GameLoop {
   }
 
   private frame = (now: number): void => {
-    this.maybeSendInput(now);
-    this.render();
+    try {
+      this.maybeSendInput(now);
+      this.render();
+    } catch (err) {
+      // A single bad frame (e.g. an unexpected snapshot shape) should never
+      // silently kill the loop — log and keep going rather than leaving the
+      // player stuck on a frozen screen.
+      console.error("game loop: frame error", err);
+    }
     requestAnimationFrame(this.frame);
   };
 

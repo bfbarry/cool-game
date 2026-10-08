@@ -153,7 +153,7 @@ func (w *World) handleInput(playerID string, data protocol.InputData) {
 		return
 	}
 	p.ApplyInput(data)
-	shouldFire := data.Firing && w.canFire(playerID)
+	shouldFire := data.Firing && w.canFireLocked(playerID, p)
 	w.mu.Unlock()
 
 	if shouldFire {
@@ -161,10 +161,11 @@ func (w *World) handleInput(playerID string, data protocol.InputData) {
 	}
 }
 
-func (w *World) canFire(playerID string) bool {
-	w.mu.Lock()
-	p := w.players[playerID]
-	w.mu.Unlock()
+// canFireLocked checks weapon fire-rate cooldown. Caller must already hold
+// w.mu — this does not lock it itself (previously it did, which deadlocked
+// against the caller's own lock since sync.Mutex isn't reentrant; every
+// left-click would freeze the whole server).
+func (w *World) canFireLocked(playerID string, p *player.Player) bool {
 	if p == nil {
 		return false
 	}

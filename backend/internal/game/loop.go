@@ -155,7 +155,16 @@ func (w *World) Snapshot() protocol.StateData {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	data := protocol.StateData{Tick: w.tick}
+	// Initialized non-nil (rather than left as zero-value slices) so
+	// json.Marshal emits "[]" instead of "null" when empty — clients
+	// should be able to range over these unconditionally.
+	data := protocol.StateData{
+		Tick:        w.tick,
+		Players:     []protocol.PlayerState{},
+		NPCs:        []protocol.NPCState{},
+		Vehicles:    []protocol.VehicleState{},
+		Projectiles: []protocol.ProjectileState{},
+	}
 	for _, p := range w.players {
 		data.Players = append(data.Players, p.ToWire())
 	}

@@ -26,12 +26,25 @@ export class ClientWorld {
 
   constructor(private socket: GameSocket) {
     socket.on(MessageType.Welcome, (data) => this.onWelcome(data as WelcomeData));
-    socket.on(MessageType.State, (data) => (this.latest = data as StateData));
+    socket.on(MessageType.State, (data) => this.onState(data as StateData));
     socket.on(MessageType.PlayerJoined, (data) => this.onPlayerJoined(data as PlayerJoinedData));
     socket.on(MessageType.PlayerLeft, (data) => this.onPlayerLeft(data as PlayerLeftData));
     socket.on(MessageType.Damage, (data) => onDamage(data as DamageData));
     socket.on(MessageType.Death, (data) => onDeath(data as DeathData));
     socket.on(MessageType.PointsUpdate, (data) => this.onPointsUpdate(data as PointsUpdateData));
+  }
+
+  // Defense-in-depth: the server always sends [] for empty lists (never
+  // null), but normalize here too so one malformed snapshot can't throw
+  // inside the render loop's `for...of` and kill requestAnimationFrame.
+  private onState(data: StateData): void {
+    this.latest = {
+      tick: data.tick,
+      players: data.players ?? [],
+      npcs: data.npcs ?? [],
+      vehicles: data.vehicles ?? [],
+      projectiles: data.projectiles ?? [],
+    };
   }
 
   private onWelcome(data: WelcomeData): void {
